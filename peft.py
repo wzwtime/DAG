@@ -240,6 +240,10 @@ class PEFT:
         self.update_ready_list()
 
     def peft(self):
+        """algorithm entry"""
+        """compute OCT table and rank_oct"""
+        self.get_oct_table_and_rank_oct()
+
         """initial task"""
         n_entry = self.rank_oct.pop(0)[0]
         self.ready_list.append(n_entry)
@@ -261,7 +265,7 @@ if __name__ == "__main__":
     q = 3
     n = 1
     peft = PEFT(v, q, n)
-    peft.get_oct_table_and_rank_oct()
+    # peft.get_oct_table_and_rank_oct()
     makespan = peft.peft()
     print(makespan)
 
