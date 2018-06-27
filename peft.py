@@ -1,18 +1,26 @@
 # coding=utf-8
 import operator
 import copy
+import time
+import heft_new
 
-class PEFT:
+
+class Peft:
 
     def __init__(self, v_, q_, n_):
         """n is which dag"""
-        self.dag = {}
-        self.computation_costs = []
+        self.heft = heft_new.Heft(q_, n_, v_)
+        self.pred = self.heft.pred_list()
+        self.pred.sort(key=operator.itemgetter(0), reverse=False)
+        self.computation_costs = self.heft.computation_costs
+        self.dag = self.heft.dag
+        # self.dag = {}
+        # self.computation_costs = []
         self.v = v_
         self.q = q_
         self.n = n_
         self.M = 10000
-        self.pred = []
+        # self.pred = []
         self.oct_table = {}
         self.rank_oct = []
         self.rank_oct_copy = []
@@ -20,10 +28,14 @@ class PEFT:
         self.Pi = {}
         self.scheduler = []
         self.makespan = 0
+        self.start_time = 0
+        self.end_time = 0
+        self.running_time = 0
+        self.Tlevel = []
 
     def read_dag(self):
         """q is the number of processors, n is which graph"""
-        filename = 'save_dag/PEFT_v=' + str(self.v) + 'q=' + str(self.q) + '\_' + str(self.n) + '_dag_q=' \
+        filename = 'save_dag/new/v=' + str(self.v) + 'q=' + str(self.q) + '\_' + str(self.n) + '_dag_q=' \
                    + str(self.q) + '.txt'
         with open(filename, 'r') as file_object_:
             lines = file_object_.readlines()
@@ -45,7 +57,7 @@ class PEFT:
 
     def read_computation_costs(self):
         """q is the number of processors, n is which graph"""
-        filename = 'save_dag/PEFT_v=' + str(self.v) + 'q=' + str(self.q) + '\_' + str(self.n) \
+        filename = 'save_dag/new/v=' + str(self.v) + 'q=' + str(self.q) + '\_' + str(self.n) \
                    + '_computation_costs_q=' + str(self.q) + '.txt'
         with open(filename, 'r') as file_object:
             lines = file_object.readlines()
@@ -59,7 +71,7 @@ class PEFT:
 
     def get_pred(self):
         """"""
-        self.read_dag()
+        # self.read_dag()
         for job in range(1, self.v + 1):
             temp = []
             for j in range(self.v):
@@ -107,8 +119,8 @@ class PEFT:
     def get_oct_table_and_rank_oct(self):
         """compute OCT table and rank_oct"""
         # self.read_dag()
-        self.get_pred()
-        self.read_computation_costs()
+        # self.get_pred()
+        # self.read_computation_costs()
         ti = self.v
         while ti > 0:
             if len(self.dag[ti]) == 0:
@@ -136,10 +148,13 @@ class PEFT:
             self.scheduler.append([job_, pi_])
         if job_ == self.v:
             self.makespan = eft_
+        self.Tlevel.append(job_)
 
     def sched_entry_task(self, job):
         """entry task"""
-        est = 0
+        label_pi = 0
+        label_est = 0
+        label_eft = 0
         min_o_eft = self.M
         for pi in range(self.q):
             eft = self.computation_costs[job - 1][pi]
@@ -148,8 +163,8 @@ class PEFT:
             if min_o_eft > o_eft:
                 min_o_eft = o_eft
                 label_pi = pi + 1
-                eft = self.computation_costs[job - 1][label_pi - 1]
-                self.add_pi(label_pi, job, est, eft)
+                label_eft = self.computation_costs[job - 1][label_pi - 1]
+        self.add_pi(label_pi, job, label_est, label_eft)
         """update ready_list"""
         num_succ = len(self.dag[job].keys())
         for i in range(num_succ):
@@ -162,6 +177,7 @@ class PEFT:
         pred_pi = 0
         for k in range(self.v):
             if job_pred_j == self.rank_oct_copy[k][0]:
+                # print(self.scheduler[k][1])
                 pred_pi = self.scheduler[k][1]          # self.scheduler[k][1] is 1  !!!!!! 6.2
                 aft = 0
                 for m in range(len(self.Pi[pred_pi])):
@@ -188,15 +204,20 @@ class PEFT:
 
     def update_ready_list(self):
         """update ready_list"""
+
         if self.rank_oct:
             candidate_job = self.rank_oct[0][0]
+            # print("candidate_job =", candidate_job)
             """Judge whether the pred are all complete scheduled ?"""
             num_pred = len(self.pred[candidate_job - 1][1])
+            # print("num_pred =", num_pred)
             sched_num = 0
+            # print("self.pred[candidate_job - 1][1] =", self.pred[candidate_job - 1][1])
             for candidate_job_pred in self.pred[candidate_job - 1][1]:
                 for i in range(len(self.scheduler)):
                     if candidate_job_pred == self.scheduler[i][0]:
                         sched_num += 1
+            # print("sched_num =", sched_num)
             if sched_num == num_pred:
                 succ = self.rank_oct.pop(0)[0]
                 self.ready_list.append(succ)
@@ -241,6 +262,7 @@ class PEFT:
 
     def peft(self):
         """algorithm entry"""
+        self.start_time = time.time()
         """compute OCT table and rank_oct"""
         self.get_oct_table_and_rank_oct()
 
@@ -249,24 +271,52 @@ class PEFT:
         self.ready_list.append(n_entry)
 
         while self.ready_list:
+            # print("ready_list =", self.ready_list)
+            # print("rank_oct =", self.rank_oct)
             job = self.ready_list.pop(0)
-
             """entry task"""
             if job == n_entry:
                 self.sched_entry_task(job)
+
             else:
                 """unentry task"""
                 self.sched_unentry_task(job)
+
+        self.end_time = time.time()
+        self.running_time = int(round((self.end_time - self.start_time), 3) * 1000)
         return self.makespan
 
 
 if __name__ == "__main__":
-    v = 10
-    q = 3
-    n = 1
-    peft = PEFT(v, q, n)
-    # peft.get_oct_table_and_rank_oct()
+    v = 20
+    q = 7
+    n = 55
+    peft = Peft(v, q, n)
     makespan = peft.peft()
-    print(makespan)
-
+    print("-----------------------PEFT-----------------------")
+    print('makespan =', makespan)
+    print("Tlevel(PEFT) =", peft.Tlevel)
+    print("Running_time =", peft.running_time)
+    # print(peft.scheduler)
+    # print(peft.Pi)
+    print("-----------------------PEFT-----------------------")
+    # print(peft.oct_table)
+    # print(peft.Pi)
+    # print(peft.rank_oct_copy)
+    # print(peft.scheduler)
+    """
+    for n in range(1, N + 1):
+        peft = PEFT(v, q, n)
+        makespan = peft.peft()
+        # print(peft.oct_table)
+        # print(peft.Pi)
+        # print(peft.rank_oct_copy)
+        # print(peft.scheduler)
+        if makespan == 0:
+            print("----------------------")
+            print(n)
+            print("----------------------")
+        else:
+            print("makespan=", n, makespan)
+    """
 
