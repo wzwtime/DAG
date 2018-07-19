@@ -9,7 +9,7 @@ class Peft:
 
     def __init__(self, v_, q_, n_):
         """n is which dag"""
-        self.heft = heft_new.Heft(q_, n_, v_)
+        self.heft = heft_new.Heft(q_, n_, v_, 0)
         self.pred = self.heft.pred_list()
         self.pred.sort(key=operator.itemgetter(0), reverse=False)
         self.computation_costs = self.heft.computation_costs
@@ -288,18 +288,19 @@ class Peft:
 
 
 if __name__ == "__main__":
-    v = 20
-    q = 7
-    n = 55
-    peft = Peft(v, q, n)
-    makespan = peft.peft()
-    print("-----------------------PEFT-----------------------")
-    print('makespan =', makespan)
-    print("Tlevel(PEFT) =", peft.Tlevel)
-    print("Running_time =", peft.running_time)
-    # print(peft.scheduler)
-    # print(peft.Pi)
-    print("-----------------------PEFT-----------------------")
+    v = 10
+    q = 3
+    # n = 8
+    for n in range(1, 2):
+        peft = Peft(v, q, n)
+        makespan = peft.peft()
+        print("-----------------------PEFT-----------------------")
+        print('makespan =', makespan)
+        print("Tlevel(PEFT) =", peft.Tlevel)
+        print("Running_time =", peft.running_time)
+        # print(peft.scheduler)
+        # print(peft.Pi)
+        print("-----------------------PEFT-----------------------")
     # print(peft.oct_table)
     # print(peft.Pi)
     # print(peft.rank_oct_copy)
