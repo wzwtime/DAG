@@ -126,7 +126,7 @@ if __name__ == "__main__":
     v = 20
     q = 7
     n = 23
-    PopSize = v * v
+    PopSize = 2 * v
     init_ppl = InitPopulation(PopSize, v, q, n)
     print("Blevel(HEFT) =", init_ppl.Blevel)
     print("Llevel(CPOP) =", init_ppl.Llevel)
