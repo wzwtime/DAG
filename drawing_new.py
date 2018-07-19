@@ -28,6 +28,13 @@ SLR_peft = {
     80: [],
     100: [],
 }
+SLR_ga = {
+    20: [],
+    40: [],
+    60: [],
+    80: [],
+    100: [],
+}
 
 Speedup_adts = {
     20: [],
@@ -57,6 +64,14 @@ Speedup_peft = {
     80: [],
     100: [],
 }
+Speedup_ga = {
+    20: [],
+    40: [],
+    60: [],
+    80: [],
+    100: [],
+}
+
 
 Time_adts = {
     20: [],
@@ -86,16 +101,24 @@ Time_peft = {
     80: [],
     100: [],
 }
+Time_ga = {
+    20: [],
+    40: [],
+    60: [],
+    80: [],
+    100: [],
+}
 
 heft_info = []
 cpop_info = []
 peft_info = []
 adts_info = []
+ga_info = []
 
 
 def read_slr_speedup_time(slr_name, speedup_name, time_name, v):
     """read in slr file"""
-    file_path = "performance/6_4/v=" + str(v) + "/"
+    file_path = "performance/7_18/v=" + str(v) + "PopSize=" + str(int(v)) + "/"
     filename = file_path + "slr_speedup_heft_cpop.txt"
     with open(filename, 'r') as file_object:
         lines = file_object.readlines()
@@ -125,6 +148,13 @@ def read_slr_speedup_time(slr_name, speedup_name, time_name, v):
                 speedup_name[v_].append(speedup_peft_)
                 time_peft_ = int(line_list[15])
                 time_name[v_].append(time_peft_)
+            elif slr_name == SLR_ga and speedup_name == Speedup_ga and time_name == Time_ga:
+                ga_slr_ = float(line_list[17])
+                slr_name[v_].append(ga_slr_)
+                speedup_ga_ = float(line_list[18])
+                speedup_name[v_].append(speedup_ga_)
+                time_ga_ = int(line_list[19])
+                time_name[v_].append(time_ga_)
 
 
 def read_slr_speedup_time_adts(slr_name, speedup_name, time_name, v):
@@ -147,29 +177,36 @@ def read_slr_speedup_time_adts(slr_name, speedup_name, time_name, v):
                 time_name[v_].append(time_adts_)
 
 
-for v in range(20, 101, 20):
-    read_slr_speedup_time(SLR_heft, Speedup_heft, Time_heft, v)
-    read_slr_speedup_time(SLR_cpop, Speedup_cpop, Time_cpop, v)
-    read_slr_speedup_time(SLR_peft, Speedup_peft, Time_peft, v)
-    read_slr_speedup_time_adts(SLR_adts, Speedup_adts, Time_adts, v)
+def get_avg():
+    for v in range(20, 101, 20):
+        read_slr_speedup_time(SLR_heft, Speedup_heft, Time_heft, v)
+        read_slr_speedup_time(SLR_cpop, Speedup_cpop, Time_cpop, v)
+        read_slr_speedup_time(SLR_peft, Speedup_peft, Time_peft, v)
+        read_slr_speedup_time(SLR_ga, Speedup_ga, Time_ga, v)
+        read_slr_speedup_time_adts(SLR_adts, Speedup_adts, Time_adts, v)
 
-# print("SLR_heft=", SLR_heft)
-# print("Speedup_heft=", Speedup_heft)
-# print("Time_heft=", Time_heft)
-#
-#
-# print("SLR_cpop=", SLR_cpop)
-# print("speedup_cpop=", Speedup_cpop)
-# print("Time_cpop =", Time_cpop)
-#
-# print("SLR_peft=", SLR_peft)
-# print("speedup_peft=", Speedup_peft)
-# print("Time_peft =", Time_peft)
-#
-# print("SLR_adts=", SLR_adts)
-# print("speedup_adts=", Speedup_adts)
-# print("Time_adts =", Time_adts)
+    print("SLR_heft=", SLR_heft)
+    print("Speedup_heft=", Speedup_heft)
+    print("Time_heft=", Time_heft)
 
+    print("SLR_cpop=", SLR_cpop)
+    print("speedup_cpop=", Speedup_cpop)
+    print("Time_cpop =", Time_cpop)
+
+    print("SLR_peft=", SLR_peft)
+    print("speedup_peft=", Speedup_peft)
+    print("Time_peft =", Time_peft)
+
+    print("SLR_ga=", SLR_ga)
+    print("speedup_ga=", Speedup_ga)
+    print("Time_ga =", Time_ga)
+
+    print("SLR_adts=", SLR_adts)
+    print("speedup_adts=", Speedup_adts)
+    print("Time_adts =", Time_adts)
+
+
+# get_avg()
 
 # print(len(SLR_heft[20]))
 # print(len(SLR_cpop[20]))
@@ -206,12 +243,12 @@ def avg_slr_speedup_time(list_, info):
         temp_info.append(min_info)
         max_info = max(values)
         temp_info.append(max_info)
-        avg_ = round(sum(values) / len(values), 3)
+        avg_ = round((sum(values) - min_info - max_info) / (len(values) - 2), 3)
         temp_info.append(avg_)
         info.append(temp_info)
 
 
-def get_avg_slr_speedup_time(txt, heft, cpop, peft, adts):
+def get_avg_slr_speedup_time(txt, heft, cpop, peft, ga, adts):
     avg_slr_speedup_time(heft, heft_info)
     print("heft-avg_" + str(txt) + "=", heft_info)
 
@@ -220,6 +257,9 @@ def get_avg_slr_speedup_time(txt, heft, cpop, peft, adts):
 
     avg_slr_speedup_time(peft, peft_info)
     print("peft-avg_" + str(txt) + "=", peft_info)
+
+    avg_slr_speedup_time(ga, ga_info)
+    print("ga-avg_" + str(txt) + "=", ga_info)
 
     avg_slr_speedup_time(adts, adts_info)
     print("adts-avg_" + str(txt) + "=", adts_info)
@@ -242,40 +282,63 @@ def drawing(ylabel):
     y2_value = []
     y3_value = []
     y4_value = []
+    y5_value = []
+
     for i in range(len(heft_info)):
         y1_value.append(heft_info[i][2])
     for i in range(len(cpop_info)):
         y2_value.append(cpop_info[i][2])
     for i in range(len(peft_info)):
         y3_value.append(peft_info[i][2])
+    for i in range(len(ga_info)):
+        y4_value.append(ga_info[i][2])
     for i in range(len(adts_info)):
-        y4_value.append(adts_info[i][2])
+        y5_value.append(adts_info[i][2])
     plt.plot(input_values, y1_value, "^-.", label="HEFT")
     plt.plot(input_values, y2_value, "8--", label="CPOP")
     plt.plot(input_values, y3_value, "s--", label="PEFT")
-    plt.plot(input_values, y4_value, "d--", label="ADTS")
+    plt.plot(input_values, y4_value, "p--", label="MPQGA")
+    plt.plot(input_values, y5_value, "d--", label="ADTS")
+
+    # y1_value = [837.505, 11538.28, 43377.226, 63704.2, 224057.5]
+    # y2_value = [959.978, 10169.037, 43213.065, 113030.4, 178932.0]
+    # y3_value = [921.374, 13493.817, 51031.645, 257223.5, 454217.0]
+    # y4_value = [763.352, 9320.634, 51967.935, 102565.5, 389070.0]
+    # y5_value = [889.599, 9909.927, 44940.903, 90415.8, 180636.5]
+    # y1_value = [item/1000 for item in y1_value]
+    # y2_value = [item / 1000 for item in y2_value]
+    # y3_value = [item / 1000 for item in y3_value]
+    # y4_value = [item / 1000 for item in y4_value]
+    # y5_value = [item / 1000 for item in y5_value]
+    # plt.plot(input_values, y1_value, "^-.", label="PopSize=0.2v")
+    # plt.plot(input_values, y2_value, "8--", label="PopSize=0.25v")
+    # plt.plot(input_values, y3_value, "s--", label="PopSize=0.5v")
+    # plt.plot(input_values, y4_value, "p--", label="PopSize=v")
+    # plt.plot(input_values, y5_value, "d--", label="PopSize=2v")
 
     # plt.grid(True)         # 显示网格
-    plt.legend(loc='upper left')           # 显示图例
+    plt.legend(loc='best')           # 显示图例
     # plt.savefig('asd.png', bbox_inches='tight')
     # plt.close()
     plt.show()
 
 
 # txt = "slr"
-# get_avg_slr_speedup_time(txt, SLR_heft, SLR_cpop, SLR_peft, SLR_adts)
+# get_avg_slr_speedup_time(txt, SLR_heft, SLR_cpop, SLR_peft, SLR_ga, SLR_adts)
 # ylabel = "Average SLR"
-
+#
 
 # txt = "speedup"
-# get_avg_slr_speedup_time(txt, Speedup_heft, Speedup_cpop, Speedup_peft, Speedup_adts)
+# get_avg_slr_speedup_time(txt, Speedup_heft, Speedup_cpop, Speedup_peft, Speedup_ga, Speedup_adts)
 # ylabel = "Average Speedup"
 
-# txt = "time"
-# get_avg_slr_speedup_time(txt, Time_heft, Time_cpop, Time_peft, Time_adts)
-# ylabel = "Average Running Time(ms)"
+txt = "time"
+# get_avg_slr_speedup_time(txt, Time_heft, Time_cpop, Time_peft, Time_ga, Time_adts)
+ylabel = "Average Running Time(s)"
 #
-# drawing(ylabel)
+drawing(ylabel)
+
+
 
 
 def box(name_, ylabel_, list_):
