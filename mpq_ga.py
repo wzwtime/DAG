@@ -4,6 +4,7 @@ import init_population
 import copy
 import heft_new
 import random
+import time
 
 
 class MPQGA:
@@ -19,6 +20,9 @@ class MPQGA:
         self.pred = []
         self.g = 1
         self.makespan = 0
+        self.start_time = 0
+        self.end_time = 0
+        self.running_time = 0
 
     def judge(self, parent, parent_index):
         # Judge whether the tem_individual is satisfied the tabu list
@@ -162,6 +166,7 @@ class MPQGA:
 
     def mpqga(self, v_, q_, n_, g_):
         """main"""
+        self.start_time = time.time()
         init_ppl = init_population.InitPopulation(self.PopSize, v_, q_, n_)
         self.dag = init_ppl.dag
         self.pred = init_ppl.pred
@@ -180,8 +185,8 @@ class MPQGA:
             elitism = copy.deepcopy(self.Poputation[self.fitness.index(max(self.fitness))])
             self.NextPoputation.append(elitism)
 
-            print("------------------------------------------", " g =", self.g)
-            print("fitness =", self.fitness)
+            # print("------------------------------------------", " g =", self.g)
+            # print("fitness =", self.fitness)
             # print("makespan =", self.makespan)
             # print("NextPoputation =", self.NextPoputation)
 
@@ -210,16 +215,19 @@ class MPQGA:
             self.g += 1
             # g += 1
 
+        self.end_time = time.time()
+        self.running_time = int(round((self.end_time - self.start_time), 3) * 1000)
+
         return self.makespan
 
 
 if __name__ == "__main__":
-    v = 10
-    q = 3
-    n = 1
+    v = 20
+    q = 7
+    n = 28
     g = 50           # An algebra that terminates evolution
     PopSize = 2 * v
-    for m in range(1, 10):
+    for m in range(1, 2):
         mpq_ga = MPQGA(PopSize)
         makespan = mpq_ga.mpqga(v, q, n, g)
         print("Poputation = ", mpq_ga.Poputation)
