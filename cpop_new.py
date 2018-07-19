@@ -9,7 +9,7 @@ class Cpop:
 
     def __init__(self, q, n, v):
         """"""
-        self.heft = heft_new.Heft(q, n, v)
+        self.heft = heft_new.Heft(q, n, v, 0)
         self.pred = self.heft.pred_list()
         self.computation_costs = self.heft.computation_costs
         self.dag = self.heft.dag
@@ -20,6 +20,7 @@ class Cpop:
         self.rank_d = []
         self.scheduler = []  # Record the processor number where each task schedule is located
         self.priority = []
+        # self.rank_u_d = []
         self.cp = 0   # the priority of entry task
         self.set_cp = [1, ]     # A set of nodes with the same priority as the entry node
         self.rank_u_copy = self.heft.rank_u_copy
@@ -30,6 +31,7 @@ class Cpop:
         self.running_time = 0
         self.slr = 0
         self.speedup = 0
+        self.Llevel = []
 
     def pred_rank_d(self, j, k, rank_d_copy):
         """Looking for the predecessor's rank_d"""
@@ -85,6 +87,7 @@ class Cpop:
             self.priority.append([j, self.rank_d[j - 1][1] + self.heft.rank_u_copy[i][1]])
         self.priority.sort(key=operator.itemgetter(0))  # In ascending order of nodes
         self.cp = self.priority[0][1]
+        # self.rank_u_d = copy.deepcopy(self.priority)
         return self.priority
 
     def get_set_cp(self):
@@ -130,6 +133,7 @@ class Cpop:
             list_pi.append({'job': job_, 'est': est_, 'end': eft_})
             self.Pi[pi_] = list_pi
             self.scheduler.append([job_, pi_])
+        self.Llevel.append(job_)
 
     def get_aft(self, job_pred_j):
         """"""
@@ -341,12 +345,12 @@ if __name__ == "__main__":
     cp_min_costs = cpop.cp_min_costs
     print("-----------------------CPOP-----------------------")
     print('makespan =', makespan)
+    print("Llevel(CPOP) =", cpop.Llevel)
     print("cp_min_costs =", cp_min_costs)
     print("Running_time =", cpop.running_time)
     print("SLR =", cpop.slr)
+    # print(cpop.scheduler)
+    # print(cpop.Pi)
+    print(cpop.dag)
+    print(cpop.computation_costs)
     print("-----------------------CPOP-----------------------")
-
-
-
-
-
