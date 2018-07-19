@@ -1,3 +1,4 @@
+# coding=utf-8
 """The HEFT(Heterogeneous Earliest Finish Time) Scheduling Algorithm of DAGs"""
 import operator
 import copy
@@ -6,42 +7,37 @@ import time
 
 class Heft:
 
-    def __init__(self, q, n, v):
+    def __init__(self, q, n, v, rank_u):
         """"""
         self.Q = q
-        self.n = n  # schedule which dag
-        self.v = v  # the number of nodes
+        self.n = n              # schedule which dag
+        self.v = v              # the number of nodes
         self.dag = {}
         self.computation_costs = []
         self.M = 10000
         self.Pi = {}
 
-        self.eft = 0  # Recording the make_span
-        self.scheduler = []  # Recording the scheduling processors'id of different tasks.
-        self.avg_costs = []  # Computing the average computation costs of every task.
-        self.rank_u = []  # Recording the priorities
-        self.pred = []  # Predecessor node list
+        self.eft = 0            # Recording the make_span
+        self.scheduler = []     # Recording the scheduling processors'id of different tasks.
+        self.avg_costs = []     # Computing the average computation costs of every task.
+        self.rank_u = []        # Recording the priorities
+        self.pred = []          # Predecessor node list
         self.rank_u_copy = []
+        self.new_rank_u = copy.deepcopy(rank_u)
+        self.new_rank_u_copy = copy.deepcopy(rank_u)
+
         self.min_costs = 0
         self.start_time = 0
         self.end_time = 0
         self.running_time = 0
         self.speedup = 0
+        self.Blevel = []
 
     def read_dag(self):
         """q is the number of processors, n is which graph"""
         # dag_ = {}
-        filename = 'save_dag' + '\\' + 'new/v=' + str(self.v) + 'q=' + str(self.Q) + '\_' + str(self.n) + '_dag_q=' \
+        filename = 'save_dag/new/v=' + str(self.v) + 'q=' + str(self.Q) + '/_' + str(self.n) + '_dag_q=' \
                    + str(self.Q) + '.txt'
-        """
-        f = open(filename)
-        last_line = ''.join(f.readlines()[-1])
-        line_list = last_line.split()
-        v = int(line_list[1])
-        print(v)
-        count = len(open(filename, 'rU').readlines())
-        print(count)
-        """
         with open(filename, 'r') as file_object_:
             lines = file_object_.readlines()
             task_id = 0
@@ -66,7 +62,7 @@ class Heft:
     def read_computation_costs(self):
         """q is the number of processors, n is which graph"""
         # computation_costs_ = []
-        filename = 'save_dag' + '\\' + 'new/v=' + str(self.v) + 'q=' + str(self.Q) + '\_' + str(self.n) \
+        filename = 'save_dag/new/v=' + str(self.v) + 'q=' + str(self.Q) + '/_' + str(self.n) \
                    + '_computation_costs_q=' + str(self.Q) + '.txt'
         with open(filename, 'r') as file_object:
             lines = file_object.readlines()
@@ -95,9 +91,7 @@ class Heft:
         return self.avg_costs
 
     def rank__u(self):
-        """Computing the priorities
-
-         Calculate in order rank_u(n_i) = (w_i ) ̅ + max(n_j∈succ(n_i)⁡{c(i,j) ) ̅ + rank_u (n_j )}"""
+        """Computing the priorities"""
 
         """Computing the average computation costs of every task"""
         self.avg_cost()
@@ -145,7 +139,6 @@ class Heft:
                     sub_pred = j + 1
                     temp.append(sub_pred)
             self.pred.append([job_, temp])
-        
         return self.pred
 
     def add_pi(self, pi_, job_, est_, eft_):
@@ -160,6 +153,7 @@ class Heft:
             list_pi.append({'job': job_, 'est': est_, 'end': eft_})
             self.Pi[pi_] = list_pi
             self.scheduler.append({job_: pi_})
+        self.Blevel.append(job_)
 
     def get_aft(self, job_pred_j):
         """"""
@@ -167,7 +161,9 @@ class Heft:
         pred_pi = 0
         for k in range(len(self.rank_u_copy)):  # rank_u_copy
             if job_pred_j == self.rank_u_copy[k][0]:
-                pred_pi = self.scheduler[k][job_pred_j]
+                # print("self.scheduler =", self.scheduler)
+                pred_pi = self.scheduler[k][job_pred_j]         # !!!!!!!!
+                # pred_pi = self.scheduler[k][1]
                 aft = 0
                 for m in range(len(self.Pi[pred_pi])):
                     if self.Pi[pred_pi][m]['job'] == job_pred_j:
@@ -215,6 +211,9 @@ class Heft:
         # Calculate the earliest finish time  EFT(n_i,p_j)=w_(i,j) + EST(n_i,p_j)
         self.start_time = time.time()
         self.pred_list()
+        if self.new_rank_u != 0:
+            self.rank_u = copy.deepcopy(self.new_rank_u)
+            self.rank_u_copy = copy.deepcopy(self.new_rank_u_copy)
         computation_costs = self.computation_costs
         v = self.v
 
@@ -272,7 +271,7 @@ class Heft:
         self.end_time = time.time()
         self.running_time = int(round((self.end_time - self.start_time), 3) * 1000)
         self.min_costs = self.get_min_comp_costs()
-        self.speedup = round(self.min_costs / eft, 4)
+        self.speedup = round(1.0 * self.min_costs / eft, 4)
         return eft
 
 
@@ -280,12 +279,17 @@ if __name__ == "__main__":
     q = 3
     n = 1
     v = 10
-    heft = Heft(q, n, v)
+    heft = Heft(q, n, v, 0)
     make_span = heft.heft()
 
     print("-----------------------HEFT-----------------------")
     print('make_span =', make_span)
+    print("Blevel(HEFT) =", heft.Blevel)
     print("min_costs", heft.min_costs)
     print("Running_time =", heft.running_time)
     print("Speedup = ", heft.speedup)
+    print("heft.scheduler =", heft.scheduler)
+    print("heft.Pi =", heft.Pi)
+    # print(heft.scheduler)
+    # print(heft.Pi)
     print("-----------------------HEFT-----------------------")
