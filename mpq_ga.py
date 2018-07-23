@@ -14,7 +14,7 @@ class MPQGA:
         self.Poputation = []
         self.NextPoputation = []
         # self.Pc = 0.1               # Probability of crossover operator occurrence
-        self.Pm = 0.01              # Probability of mutation operator occurrence
+        # self.Pm = 0.01              # Probability of mutation operator occurrence
         self.fitness = []
         self.dag = {}
         self.pred = []
@@ -71,9 +71,12 @@ class MPQGA:
         p_i = []
         s_i = []
         sum_fitness = sum(self.fitness)
-        for p in range(self.PopSize):
+        for p in range(self.PopSize-1):
             p_i.append(round(self.fitness[p] / sum_fitness, 4))
             s_i.append(round(sum(p_i), 4))
+
+        p_i.append(round(1 - sum(p_i), 4))
+        s_i.append(round(sum(p_i), 4))
         # print("p_i =", p_i)
         # print("sum(p_i) =", sum(p_i))
         # print("s_i =", s_i)
@@ -84,9 +87,11 @@ class MPQGA:
         for i in range(self.PopSize - 1):  # Choose how many
             # r = round(random.random(), 4)
             r = round(random.uniform(0, s_i[-1]), 4)
+            # print("r=", r)
+
             for k in range(self.PopSize):
                 if s_i[k] >= r:
-                    # print("s_i[k] =", s_i[k], "r =",  r)
+                    # print("s_i[k] =", s_i[k], "r =",  r, "-----i=", i+1)
                     self.NextPoputation.append(self.Poputation[k])
                     break
 
@@ -223,11 +228,11 @@ class MPQGA:
 
 if __name__ == "__main__":
     v = 20
-    q = 7
-    n = 28
+    q = 3
+    n = 1
     g = 50           # An algebra that terminates evolution
-    PopSize = 2 * v
-    for m in range(1, 2):
+    PopSize = int(2 * v)
+    for m in range(1, 10):
         mpq_ga = MPQGA(PopSize)
         makespan = mpq_ga.mpqga(v, q, n, g)
         print("Poputation = ", mpq_ga.Poputation)
