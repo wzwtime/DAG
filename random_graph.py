@@ -11,18 +11,16 @@ class RandomGraphGenerator:
 
     def __init__(self, v_, q_, n_,  N_, n_min_, n_max_):
         self.SET_v = [20, 40, 60, 80, 100]
-        # self.SET_ccr = [0.1, 0.5, 1.0, 5.0, 10.0]
-        self.SET_ccr = [1.0, 5.0, 10.0]
-        self.SET_alpha = [1.0, 2.0]
+        self.SET_ccr = [0.1, 0.5, 1.0, 5.0, 10.0]
+        # self.SET_ccr = [1.0, 5.0, 10.0]
+        self.SET_alpha = [0.5, 1.0, 2.0]
         self.SET_out_degree = [2, 3, 4, 5, ]
         self.SET_beta = [0.1, 0.25, 0.5, 0.75, 1.0]
         self.SET_jump = [1, 2, 4, ]
-        self.SET_density = [0.2, 0.8]
-        # a = math.ceil(5*self.SET_density[1])
-        # print(a)
+        self.SET_density = [0.2, 0.5, 0.8]
+
         self.computation_costs = []
         self.dag = {}
-        self.new_dag = {}
         self.avg_w_dag = 0
         self.height = 0
         self.width = 0
@@ -40,12 +38,12 @@ class RandomGraphGenerator:
         self.avg_w_dag = random.randint(n_min_, n_max_)
         return self.avg_w_dag
 
-    def get_wij(self, beta):
+    def get_wij(self, n_, beta):
         """Generate computation costs overhead for tasks on different processors"""
         self.random_avg_w_dag(self.n_min, self.n_max)
 
         file_path_ = 'save_dag/' + str(self.mon) + "_" + str(self.day) + '/v=' + str(self.v) + 'q=' + str(self.q) + '/'
-        filename = file_path_ + '_' + str(self.n) + '_computation_costs_q=' + str(self.q) + '.txt'
+        filename = file_path_ + '_' + str(n_) + '_computation_costs_q=' + str(self.q) + '.txt'
         file_dir_ = os.path.split(filename)[0]
         if not os.path.isdir(file_dir_):
             os.makedirs(file_dir_)
@@ -274,7 +272,7 @@ class RandomGraphGenerator:
                 """add edges"""
                 self.add_edges(p_id_list, p_num, out_degree, c_id_list, c_num, avg_comm_costs)
 
-    def random_graph_generator(self, ccr, alpha, out_degree, beta):
+    def random_graph_generator(self, n_, ccr, alpha, out_degree, beta):
         """requires five parameters to build weighted DAGs
         v: number of tasks in the graph
         ccr: average communication cost to average computation cost
@@ -320,7 +318,7 @@ class RandomGraphGenerator:
             print("dag_id = ", dag_id)
 
             """Generate computation costs on different processors for every task"""
-            self.get_wij(beta)
+            self.get_wij(n_, beta)
 
             """Average communication costs"""
             avg_comm_costs = math.ceil(ccr * self.avg_w_dag)  # Rounded up
@@ -345,7 +343,7 @@ class RandomGraphGenerator:
             self.dag[v] = {}
         else:
             print("DAG Error! Get a new DAG!")
-            self.random_graph_generator(ccr, alpha, 5, beta)      # Get a new DAG
+            self.random_graph_generator(n_, ccr, alpha, 5, beta)      # Get a new DAG
 
     def random_index(self, set_):
         """Get the random index i of the collection to determine which parameter in the collection"""
@@ -364,14 +362,14 @@ class RandomGraphGenerator:
             info_ = str(self.v) + "  " + str(ccr) + "  " + str(alpha) + "  " + str(beta) + "  " + str(self.q) + "\n"
             file_object_.write(info_)
 
-    def select_parameter(self):
+    def select_parameter(self, n_):
         """Select 3 parameters"""
         ccr = self.SET_ccr[self.random_index(self.SET_ccr)]
         alpha = self.SET_alpha[self.random_index(self.SET_alpha)]
         beta = self.SET_beta[self.random_index(self.SET_beta)]
 
         """random_graph_generator"""
-        self.random_graph_generator(ccr, alpha, 5, beta)
+        self.random_graph_generator(n_, ccr, alpha, 5, beta)
 
         """Write graph parameter to file"""
         self.write_graph_parameter(ccr, alpha, beta)
@@ -379,10 +377,10 @@ class RandomGraphGenerator:
 
 if __name__ == "__main__":
 
-    v = 100
+    v = 20
     q = 3
     n = 1
-    N = 1
+    N = 5
     n_min = 5
     n_max = 20
 
@@ -409,7 +407,7 @@ if __name__ == "__main__":
 
     while n <= N:
         """"execute"""
-        rgg.select_parameter()
+        rgg.select_parameter(n)
 
         """Ascending sort by task number"""
         dag_new = sorted(rgg.dag.items(), key=operator.itemgetter(0))
