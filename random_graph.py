@@ -9,15 +9,17 @@ import time
 
 class RandomGraphGenerator:
 
-    def __init__(self, v_, q_, n_,  N_, n_min_, n_max_):
+    def __init__(self, v_, q_,  N_, n_min_, n_max_):
         self.SET_v = [20, 40, 60, 80, 100]
         self.SET_ccr = [0.1, 0.5, 1.0, 5.0, 10.0]
         # self.SET_ccr = [1.0, 5.0, 10.0]
-        self.SET_alpha = [0.5, 1.0, 2.0]
+        # self.SET_alpha = [0.5, 1.0, 2.0]
+        self.SET_alpha = [1.0, 2.0]
         self.SET_out_degree = [2, 3, 4, 5, ]
         self.SET_beta = [0.1, 0.25, 0.5, 0.75, 1.0]
-        self.SET_jump = [1, 2, 4, ]
+        """add new info"""
         self.SET_density = [0.2, 0.5, 0.8]
+        self.SET_jump = [1, 2, 4, ]
 
         self.computation_costs = []
         self.dag = {}
@@ -26,7 +28,6 @@ class RandomGraphGenerator:
         self.width = 0
         self.v = v_
         self.q = q_
-        self.n = n_
         self.N = N_
         self.n_min = n_min_
         self.n_max = n_max_
@@ -340,7 +341,7 @@ class RandomGraphGenerator:
             self.multi_to_less(task_num_layer, dag_id, avg_comm_costs, out_degree)
 
             """4.The last layer"""
-            self.dag[v] = {}
+            self.dag[self.v] = {}
         else:
             print("DAG Error! Get a new DAG!")
             self.random_graph_generator(n_, ccr, alpha, 5, beta)      # Get a new DAG
@@ -376,15 +377,13 @@ class RandomGraphGenerator:
 
 
 if __name__ == "__main__":
-
     v = 20
     q = 3
-    n = 1
     N = 5
     n_min = 5
     n_max = 20
 
-    rgg = RandomGraphGenerator(v, q, n, N, n_min, n_max)
+    rgg = RandomGraphGenerator(v, q, N, n_min, n_max)
 
     def store_dag(n_):
         file_path = 'save_dag/' + str(rgg.mon) + "_" + str(rgg.day) + '/v=' + str(v) + 'q=' + str(q) + '/'
@@ -405,6 +404,7 @@ if __name__ == "__main__":
                     info = str(task_id) + "  " + str(succ_id) + "  " + str(succ_weight) + "\n"
                     file_object.write(info)
 
+    n = 1
     while n <= N:
         """"execute"""
         rgg.select_parameter(n)

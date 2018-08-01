@@ -106,7 +106,8 @@ class Heft:
                 # Finding subsequent nodes j
                 max_nj = 0
                 for j in dag[v].keys():
-                    cij = dag[v][j] * 3  # communication cost of edge <i,j>
+                    cij = dag[v][j] * self.Q  # communication cost of edge <i,j>
+                    # cij = dag[v][j] * 3  # communication cost of edge <i,j>   3 is Error!!!!!!!!!!!!!!!!!!!!
                     # Finding subsequent nodes rank_uj.
                     for k in range(len(self.rank_u)):
                         if j == self.rank_u[k][0]:
