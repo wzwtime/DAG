@@ -18,11 +18,14 @@ class UCTSearch:
         self.MAX_TIME = max_time
         """get rank_u from HEFT """
         self.heft = heft_new.Heft(q_, n_, v_, 0)
-        self.pred = self.heft.pred_list()
+        self.heft_makespan = self.heft.heft()
+        # self.pred = self.heft.pred_list()
+        self.pred = self.heft.pred
         self.computation_costs = self.heft.computation_costs
         self.dag = self.heft.dag
         self.rank_u = self.heft.rank_u_copy
         self.rank_u_copy = copy.deepcopy(self.rank_u)
+
         self.Pi = {}
         self.scheduler = []
         """others"""
@@ -78,6 +81,7 @@ class UCTSearch:
         # self.select_actions = []
         self.best_makespan = 0
         self.pi_list = []
+        self.N_v = 0        # the number of patent visit
     """
     def read_dag(self):
         # q is the number of processors, n is which graph
@@ -115,7 +119,7 @@ class UCTSearch:
                 self.computation_costs.append(temp_list)
         return self.computation_costs
     """
-    def mcts_uct(self):
+    def mcts_uct(self, cp_):
         # Run as much as possible under the computation budget
         start_time = time.time()
         running_time = 0
@@ -127,7 +131,7 @@ class UCTSearch:
             self.ready_queue = copy.deepcopy(self.ready_queue_copy)     # deepcopy()
             # 1. Find the best node to expand
             # job_pi_list, pi_ = self.tree_policy()
-            self.tree_policy()
+            self.tree_policy(cp_)
 
             # 2. Random run to add node and get reward
             # makespan = self.default_policy(job_, pi_)
@@ -143,7 +147,7 @@ class UCTSearch:
         # N. Get the best next node
         # best_makespan = self.best_child()
 
-    def tree_policy(self):
+    def tree_policy(self, cp_):
         """"""
         # job_ = self.ready_queue.pop(0)
         job_ = self.ready_queue[0]
@@ -163,10 +167,12 @@ class UCTSearch:
                 print(job_, "in the tree.")
 
                 print("-----path =", self.path)
+                # print("--------------self.pi_list=", self.pi_list)
                 count = 0
                 if self.path:
                     for item in self.tree[job_]:
-                        if item[0][0] == self.path[-1][1]:
+                        # if item[0][0] == self.path[-1][1]:
+                        if item[0][: len(self.pi_list)] == self.pi_list:
                             count += 1
                 else:
                     count = len(self.tree[job_])
@@ -175,7 +181,8 @@ class UCTSearch:
                     return self.expand(job_, best_pi)
                 else:
                     print("Yes all expand")
-                    cp = round(1.0 / math.sqrt(2), 2)
+                    # cp = round(1.0 / math.sqrt(2), 2)
+                    cp = cp_
                     best_pi = self.best_child(job_, cp)
 
                     # record path pi
@@ -245,30 +252,37 @@ class UCTSearch:
         return self.path
 
     def best_child(self, job_, cp_):
-        """"""
+        """# UCB = quality / times + C * sqrt(2 * ln(total_times) / times)"""
         # Travel all sub nodes to find the best one
         best_score = float('-Inf')
         best_pi = 0
+        best_pi_index = 0
         """all expand get ucb"""
         for i in range(len(self.tree[job_])):
-            # UCB = quality / times + C * sqrt(2 * ln(total_times) / times)
-
-            print("------------------------UCB", self.pi_list)
+            # only compare the state that best_pi = pi_list. [1, 2],[1, 3], [2, 3](no compare), [1, 1]
             if self.tree[job_][i][0][:len(self.pi_list)] == self.pi_list:
-                # print('ok')
-                left = self.tree[job_][i][1][1]
-                # left = round(self.tree[job_][i][1][1]*1.0/self.tree[job_][i][1][0], 2)
-                right = round(2.0 * math.log(self.tree[0] / self.tree[job_][i][1][0]), 2)
-                # if len(self.pi_list) == 1:
-                #     right = round(2.0 * math.log(self.tree[0] / self.tree[job_][i][1][0]), 2)
-                # else:
-                #     right = round(2.0 * math.log(self.tree[job_][i][1][0] / self.tree[job_][i][1][0]), 2)
+                # print("------------------------self.pi_list =", self.pi_list)
+
+                left = round(self.tree[job_][i][1][1]*1.0/self.tree[job_][i][1][0], 2)
+                if job_ == 1:
+                    right = round(2.0 * math.log(self.tree[0]) / self.tree[job_][i][1][0], 2)
+                else:
+                    right = round(2.0 * math.log(self.N_v) / self.tree[job_][i][1][0], 2)
+
+                # right = round(2.0 * math.log(self.tree[0] / self.tree[job_][i][1][0]), 2)
+                """
+                if len(self.pi_list) == 1:
+                    right = round(2.0 * math.log(self.tree[0] / self.tree[job_][i][1][0]), 2)
+                else:
+                    right = round(2.0 * math.log(self.tree[job_][i][1][0] / self.tree[job_][i][1][0]), 2)
+                """
                 score = round(left + cp_ * math.sqrt(right), 2)
                 print(left, right, score)
                 if score > best_score:
                     best_score = score
                     best_pi = self.tree[job_][i][0][-1]  # [-1]
-                    # best_pi = self.tree[job_][i][0][0]
+                    best_pi_index = i
+
             """
             left = self.tree[job_][i][1][1]
             right = round(2.0 * math.log(self.tree[0] / self.tree[job_][i][1][0]), 2)
@@ -281,7 +295,7 @@ class UCTSearch:
             """
         print("best_score =", best_score)
         print("best_pi =", best_pi)
-
+        self.N_v = self.tree[job_][best_pi_index][1][0]
         return best_pi
 
     def add_pi(self, pi_, job_, est_, eft_):
@@ -419,7 +433,6 @@ class UCTSearch:
         print("self.path =", self.path)
         print("---pi_list=", self.pi_list)
         # Update the quality value
-        parent_q = 0
 
         # update num
         for i in range(len(self.pi_list)):
@@ -430,16 +443,18 @@ class UCTSearch:
                 # if self.tree[job][j][0][: i + 1] == self.pi_list[: i + 1]:
                 if self.tree[job][j][0] == self.pi_list[:i+1]:
                     self.tree[job][j][1][0] += 1
-                    n_v = self.tree[job][j][1][0]
                     q_v = self.tree[job][j][1][1]
 
-                    # update child q = parent_q - est
+                    # update child q = q_v + makespan + est
                     for ii in range(len(self.Pi[pi])):
                         if self.Pi[pi][ii]['job'] == job:
                             est = self.Pi[pi][ii]['est']
-                    print("Pi =", self.Pi)
+                    # print("Pi =", self.Pi)
                     print("-----est", est)
-
+                    new_q = q_v + makespan + est
+                    self.tree[job][j][1][1] = new_q
+                    print("update tree--", self.tree)
+                    """
                     if est == 0:
                         new_q = q_v + makespan
                         parent_q = new_q
@@ -451,10 +466,11 @@ class UCTSearch:
                         # new_q = parent_q + est
                         # parent_q = new_q
                         new_q = q_v + makespan + est
-                        makespan = makespan + est
+                        # makespan = makespan + est
                         # update
                         self.tree[job][j][1][1] = new_q
                         print("update tree---2", self.tree)
+                    """
 
         """
         while self.path:
@@ -500,7 +516,7 @@ class UCTSearch:
                         print("update tree---2", self.tree)
                     # self.tree[job][i][1][1] = new_q
         """
-    def main(self):
+    def main(self, cp_):
         """return makespan"""
         self.start_time = time.time()
         self.tree[0] = 0
@@ -509,13 +525,14 @@ class UCTSearch:
         self.MAX_ROUND_NUMBER = 1
 
         while round_num < self.MAX_ROUND_NUMBER:
-            self.mcts_uct()
+            self.mcts_uct(cp_)
             round_num += 1
 
         self.end_time = time.time()
         self.running_time = self.end_time - self.start_time
 
-        return max(self.tree[1], key=lambda item: item[1][1])[1][1]
+        return max(self.tree[1], key=lambda item: item[1][1]/item[1][0])[1][1]/\
+               max(self.tree[1], key=lambda item: item[1][1]/item[1][0])[1][0]
 
 
 if __name__ == "__main__":
@@ -523,8 +540,11 @@ if __name__ == "__main__":
     q = 3
     n = 1
     MAX_ROUND_NUMBER = 1
-    MAX_TIME = 1  # ms
+    MAX_TIME = 600  # s
+    cp = 10
+    # cp = round(1.0 / math.sqrt(2), 2)
 
     mcts = UCTSearch(v, q, n, MAX_ROUND_NUMBER, MAX_TIME)
-    print("best_makespan =", mcts.main())
+    print("best_makespan =", mcts.main(cp))
+    print("heft_makespan =", mcts.heft_makespan)
     # print("ready_queue =", mcts.ready_queue)
