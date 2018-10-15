@@ -10,14 +10,15 @@
 #include <windows.h>
 #define sleep(x) Sleep(1000 * x)
 #endif
-
+//#include <float.h>
 
 
 #define MAXLENGTH 10
 #define V 10	//Task number
 #define P 3		//The number of processors 
-#define MAXTIME 0.02	//s
+#define MAXTIME 0.8	//s
 #define CP 10
+#define DBL_MIN -100000
 
 
 int i, j, k, ti, pi, est, eft, makespan, count, edges_number = 0, ready_queue[MAXLENGTH];
@@ -29,6 +30,7 @@ long long int *path[2*V];
 int *child_pi;
 int *child_ti;
 int temp_schedule[V];
+int tree_entry;		//记录搜索树的入口地址 
 
 
 
@@ -67,89 +69,187 @@ typedef struct Evon_Node Node_0;
 typedef struct Odd_Node Node_1;
 
 
-int TreePolicy()
+int TreePolicy(int nn)
 {
-	int entry_job = 1, ready_job; 
+	int ready_job; 
 	path_index=0;
+	
+	//clear array 
+	memset(path, 0, sizeof(path));
+	memset(temp_schedule, 0, sizeof(temp_schedule));
+	
+	//初始化调度信息，重复利用 
+	for(i=0; i<V; i++)
+        schedule[i].PI=-1;
+ 	
+ 	
+	//奇层任务结点 
 	Node_0 *job;
-	job = (Node_0 *)malloc(sizeof(Node_0)); 		//申请新结点所需内存空间
+	
+	//将搜索树的入口地址记录下来 
+	if(nn==1)
+	{ 
+		job = (Node_0 *)malloc(sizeof(Node_0)); 	//申请新结点所需内存空间
+		tree_entry = job;
+	} 
+	else
+	{
+		//非首次迭代 
+		job=tree_entry;
+		printf("job->Ti_Q=%d\n", job->Ti_Q);
+	}
+		
 	printf("---job pointer addres = %d\n", job);
-
+	
+	//记录路径 
 	path[path_index++]=job;
 
-
-	//clear array 
-//	memset(path, 0, sizeof(path));
-//	memset(ready_queue, 0, sizeof(ready_queue));
-
+	ready_job = 1;
 	
-	
-	//printf("sizeof(job)=%d\n",sizeof(job));
-	if (entry_job==1)
-	{	
-		//assignment ti node
-		//printf("--ok\n");
-		job->Ti = 1;
-		job->Ti_N = 0;
-		job->Ti_Q = 0;
-		job->Ti_Parent = NULL;
-		printf("job->Child_pi=%d,%d,%d\n", job->Child_pi[0],job->Child_pi[1],job->Child_pi[2]);
-		//child_pi = (int *)malloc(P * sizeof(int)); 	//申请孩子结点所需内存空间 
-//		job->child_pi[0] = child_pi; 
-		//get the succ of ready_job
-
-		for (i=0,j=0;i<edges_number;i++)
-			if(comm_costs[i][0]== entry_job)
-			{
-				ready_queue[j] = comm_costs[i][1]; 
-				j++;	
-			}
-	}
-	
-
-/*
-//随机选择任务 
-	printf("j = %d\n", j);		//j=5
-	if (entry_job==1)
-	
-		for(i=0;i<j;i++)
-		{
-			ready_job = ready_queue[rand()%j];
-			printf("---ready_job= %d\n", ready_job);
-		}*/
-		
-	ready_job = entry_job;
-	
-	//Check if the current node is the terminal node
-	if (ready_job != V)
+	/*Check if the current node is the terminal node*/
+	while (ready_job != V)
 	{
-		printf("ready_job= %d\n", ready_job);
-		
-		//judge whether is node fully expanded?
+		//判断job节点是否完全扩展Judge whether nodes are fully expanded.
 		count=0;
 		for(i=0;i<P;i++)
 			if(job->Child_pi[i]!=0)
 				count++;
-		if(count!=P){
+		printf("Child_pi count=%d\n", count);
+		
+		//未扩展完 
+		if(count!=P)
+		{
 			printf("-----Not fully expanded.\n");
-			return Expand(job);
+			//printf("job->Ti=%d\n", job->Ti);
+			if(count==0)
+			{
+				printf("第一次迭代\n");
+				job->Ti = ready_job;
+				job->Ti_N = 0;
+				job->Ti_Q = 0;
+				job->Ti_Parent = NULL;
+				printf("job->Child_pi=%d,%d,%d\n", job->Child_pi[0],job->Child_pi[1],job->Child_pi[2]); 
+			}
+
+			//get the succ of ready_job
+			
+			//将入口任务后继加入就绪队列 
+			if(ready_job==1) 
+			{
+				for (i=0,j=0;i<edges_number;i++)
+				{
+					if(comm_costs[i][0]== 1)
+					{
+						ready_queue[j] = comm_costs[i][1]; 
+						j++;		//就绪任务数	
+					}
+				}
+			}
+			
+			return Expand(job);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 		}
+		//完全扩展 
 		else
 		{
 			printf("-----Yes, fully expanded.\n");
-		}
+			//printf("ready_job=%d\n",ready_job);
+			//将入口任务后继加入就绪队列 
+			for (i=0,j=0;i<edges_number;i++)
+			{
+				if(comm_costs[i][0]== 1)
+				{
+					ready_queue[j++] = comm_costs[i][1]; 
+					//j++;		//J就绪任务数	
+				}
+			}
 		
-		ready_job ++;
+			//寻找最好的UCB值节点 
+		 	BestChild(job);
+		 	int task_num;
+		 	for(task_num=0;ready_queue[task_num];task_num++)
+		 		printf("ready_job=%d\n",ready_queue[task_num]);
+	 		
+	 		ready_job=ready_queue[rand()%task_num];
+	 		//在ready_queue中删除ready_job
+			for(j=0;ready_queue[j];j++)
+				if(ready_job==ready_queue[j])
+					for(k=j;k<task_num;k++)
+						ready_queue[k]=ready_queue[k+1];
+			//插入ti的后继
+			
+			for(i=0;i<edges_number;i++)
+			{
+				if(comm_costs[i][0]==ready_job)
+				{
+					
+					//int succ; 
+//					succ = comm_costs[i][1];
+//					//判断后继的前驱个数
+//					printf("后继=%d\n", succ);
+//					count = 0;
+//					for(i=0;i<succ;i++)
+//				 	{
+//			 			if(data[i][succ-1]>0)
+//					 	{
+//							printf("%d的前驱为：%d\n",succ, i+1);
+//							count++;
+//			 			}
+//			 			
+//			 		}
+//			 		printf("count=%d\n", count);
+//			 		//若后继只有一个前驱 ，则直接加入就绪队列 
+//					if(count==1)
+//					{
+//						ready_queue[task_num++]=comm_costs[i][1];
+//					}
+//					else	//后继有多个前驱 
+//					{
+//						printf("多个前驱\n");
+//						
+//						
+//					}  
+			 		
+					 
+					 
+				 
+						
+					//检测ti的后继是否已经在就绪队列中
+					k=0;
+					for(j=0;ready_queue[j];j++)
+					{
+						if(comm_costs[i][1]==ready_queue[j])
+							k++; 
+					}
+					if(k==0) //不在就绪对列中 
+					{	
+						
+						ready_queue[task_num++]=comm_costs[i][1];
+						printf("-----------Yes!count=%d\n",count);
+					}	
+				}
+				
+			}
+		 	//Node_0 * job;
+		 	job = (Node_0 *)malloc(sizeof(Node_0)); 	//申请新结点所需内存空间
+		 	printf("第2次任务迭代\n");
+			job->Ti = ready_job;
+			job->Ti_N = 0;
+			job->Ti_Q = 0;
+			//job->Ti_Parent = NULL;
+			printf("job->Child_pi=%d,%d,%d\n", job->Child_pi[0],job->Child_pi[1],job->Child_pi[2]); 
+	 		path[path_index++]=job;
+	 		printf("ready_job=%d\n",ready_job);
+		}
+	
 	}
-	
-	
 	
 	return 0;
 }
 
+
 int Expand(Node_0 *job)
 {	
-	printf("expand path[0]=%d\n", path[0]);
+	printf("job address path[0]=%d\n", path[0]);
 	Node_1 *cpu; 
 	
 	//申请孩子处理器结点空间 
@@ -160,17 +260,34 @@ int Expand(Node_0 *job)
 	path[path_index++] = cpu; 
 
 	//处理器选择空间 
-	for(i=0; i< P; i++)
-		avail_pi[i] = i+1;
+	for(i=0;job->Child_pi[i];i++);	//计算当前节点孩子处理器数量 
+	if(i==0)
+	{
+		for(j=0; j< P; j++)
+		{ 	
+			avail_pi[j] = j+1;
+		} 
+	}
+
 	
 	//随机选择一个处理器 
-	pi = avail_pi[rand()%i];
+	pi=0;
+	while(pi==0)
+	{
+		pi = avail_pi[rand()%P];
+	}
+	
 	printf("pi=%d\n",pi);
 	
-	//在avail_pi中删除pi：赋值为0 
-	for(i=0;avail_pi[i];i++)
+	//在avail_pi中删除pi：
+	for(i=0;i<P;i++)
+	{
 		if(pi==avail_pi[i])
+		{
 			avail_pi[i]=0;
+		}
+	}
+	
 			
 	//测试输出可选处理器 
 	for(i=0;i<P;i++)
@@ -346,7 +463,7 @@ void make_schedule()
 
 
 
-int DefaultPolicy() 
+int DefaultPolicy(int nn) 
 {
   	//# 2. Random run to add node and get reward
   	int job_remin_num=0, index=0;
@@ -387,17 +504,18 @@ int DefaultPolicy()
 		}
 		else
 		{
-			//计算EST-EFT 有错！！！！！！！！！！考虑处理器的可执行时间 
+			//计算EST-EFT 
 			est = find_EST(ti-1, pi-1);
-			
-			
 			eft = comp_costs[ti-1][pi-1]+est;
+			
 	 		//加入临时调度列表 
 			temp_schedule[index++]=ti;
 			
+			//添加信息至schedule
 		 	schedule[ti-1].PI = pi-1;
 			schedule[ti-1].EST = est;
 			schedule[ti-1].EFT = eft;
+			
 	 		printf("Ti=%d\t", ti);
 			printf("PI=%d\t", schedule[ti-1].PI); 
 			printf("EST=%d\t", schedule[ti-1].EST);
@@ -411,9 +529,10 @@ int DefaultPolicy()
  	//其余任务：随机任务、随机处理器 
  	printf("-----随机任务、随机处理器------\n");
  	int m, temp_succ[V]={}, succ_index=0;		//temp_succ[]记录ti的（后继的前驱不唯一）后继 
+ 	
  	for(m=0;m<V-job_remin_num;m++)
  	{
-	 	printf("----------------------------------m=%d\n", m); 
+	 	printf("----------------------------------m=%d, nn=%d\n", m, nn); 
 	 	
 	 	//计算就绪队列中的任务数 
 	 	int task_num;
@@ -478,8 +597,6 @@ int DefaultPolicy()
 			task_num-=1;
 			
 			
-		
-			
 			/*需要优化:
 			1. 若ti只有一个前驱可直接加入就绪队列；
 			2. 若ti有多个前驱将ti后继加入一个临时列表中, 待前驱均完成调度时再加入就绪队列。*/
@@ -491,48 +608,50 @@ int DefaultPolicy()
 				if(comm_costs[i][0]==ti)
 				{
 					
-					int succ; 
-					succ = comm_costs[i][1];
-					//判断后继的前驱个数
-					printf("后继=%d\n", succ);
-					count = 0;
-					for(i=0;i<succ;i++)
-				 	{
-			 			if(data[i][succ-1]>0)
-					 	{
-							//printf("%d的前驱为：%d\n",succ, i+1);
-							count++;
-			 			}
-			 			
-			 		}
-			 		printf("count=%d\n", count);
-			 		//若后继只有一个前驱 ，则直接加入就绪队列 
-					if(count==1)
-					{
-						ready_queue[task_num++]=comm_costs[i][1];
-					}
-					else	//后继有多个前驱 
-					{
-						printf("多\n");
-					}  
+					//int succ; 
+//					succ = comm_costs[i][1];
+//					//判断后继的前驱个数
+//					printf("后继=%d\n", succ);
+//					count = 0;
+//					for(i=0;i<succ;i++)
+//				 	{
+//			 			if(data[i][succ-1]>0)
+//					 	{
+//							printf("%d的前驱为：%d\n",succ, i+1);
+//							count++;
+//			 			}
+//			 			
+//			 		}
+//			 		printf("count=%d\n", count);
+//			 		//若后继只有一个前驱 ，则直接加入就绪队列 
+//					if(count==1)
+//					{
+//						ready_queue[task_num++]=comm_costs[i][1];
+//					}
+//					else	//后继有多个前驱 
+//					{
+//						printf("多个前驱\n");
+//						
+//						
+//					}  
 			 		
 					 
 					 
 				 
 						
-					////检测ti的后继是否已经在就绪队列中
-//					k=0;
-//					for(j=0;ready_queue[j];j++)
-//					{
-//						if(comm_costs[i][1]==ready_queue[j])
-//							k++; 
-//					}
-//					if(k==0)//不在就绪对列中 
-//					{	
-//						
-//						ready_queue[task_num++]=comm_costs[i][1];
-//						//printf("-----------Yes!count=%d\n",count);
-//					}	
+					//检测ti的后继是否已经在就绪队列中
+					k=0;
+					for(j=0;ready_queue[j];j++)
+					{
+						if(comm_costs[i][1]==ready_queue[j])
+							k++; 
+					}
+					if(k==0) //不在就绪对列中 
+					{	
+						
+						ready_queue[task_num++]=comm_costs[i][1];
+						printf("-----------Yes!count=%d\n",count);
+					}	
 				}
 				
 			}
@@ -570,16 +689,98 @@ int DefaultPolicy()
 			goto L1;
 		} 
 	}
-	return makespan;
+	return -makespan;
 }
 
-int BestChild()
+int BestChild(Node_0 *job)
 {
+	/*计算UCB值，选取最大值进入搜索*/
+	//for(i=0;path[i];i++)
+//	{
+//		printf("path=%d\n", path[i]);
+//	}
+	double ucb, max_ucb=DBL_MIN; 
+	Node_1 *ucb_pi, *max_ucb_pi;
+	for(i=0;i<P;i++)
+	{
+		ucb_pi=job->Child_pi[i];
+		
+		//printf("CP*sqrt(2*(log(job->Ti_N)/ucb_pi->Pi_N)=%.2lf\n", CP*sqrt(2*(log(job->Ti_N)/ucb_pi->Pi_N)));
+		ucb = ucb_pi->Pi_Q/ucb_pi->Pi_N + CP*sqrt(2*(log(job->Ti_N)/ucb_pi->Pi_N));
+		printf("Pi_N=%d\tPi_Q=%d\t", ucb_pi->Pi_N, ucb_pi->Pi_Q);
+		printf("ucb=%.2lf\n", ucb); 
+		if(ucb>max_ucb)
+		{
+			max_ucb = ucb;
+			max_ucb_pi = ucb_pi; 
+		}
+		//printf("max_ucb=%.2lf\n",max_ucb); 	
+	}
+	printf("max_ucb=%.2lf\n", max_ucb);
+	path[path_index++]=max_ucb_pi;
+	//for(i=0;path[i];i++)
+//	{
+//		printf("path=%d\n", path[i]);
+//	}
 	return 0;
 }
 
 int BackUp()
 {
+	//打印调度信息 
+	printf("------调度信息------\n");
+	for(i=0;i<V;i++)
+	{	
+		ti=temp_schedule[i];
+		printf("Ti=%d\tPi=%d\tEST=%d\tEFT=%d\n", ti, schedule[ti-1].PI+1, schedule[ti-1].EST, schedule[ti-1].EFT);
+	} 
+	
+	Node_0 *temp_0;		//临时指针 
+	Node_1 *temp_1;
+	
+	for(i=0, j=1;path[i];i+=2, j+=2)
+	{ 
+		//printf("path=%d\n", path[i]);
+		//更新N，Q值
+	
+	 	temp_0 = path[i];
+	 	temp_1 = path[j];
+
+	 	ti = temp_0->Ti;
+	 	pi = temp_1->Pi;
+	 		 	
+	 	temp_0->Ti_N += 1;
+	 	temp_1->Pi_N += 1;
+	 	
+	 	est = schedule[ti-1].EST;
+	 	eft = schedule[ti-1].EFT;
+	 	
+	 	if(ti==1)
+ 		{
+ 			temp_0->Ti_Q += makespan;
+ 			temp_1->Pi_Q = temp_1->Pi_Q + makespan + eft;
+ 		}	
+ 		else
+ 		{
+		 	printf("更新其他任务！");
+		 	
+		 	
+		 	
+ 		}
+		printf("-------------------------%d\n", (i+j)/2+1); 
+	 	printf("Ti=%d\tTi_N=%d\tTi_Q=%d\n", temp_0->Ti, temp_0->Ti_N, temp_0->Ti_Q);
+	
+	 	printf("Pi=%d\tPi_N=%d\tPi_Q=%d\n", temp_1->Pi, temp_1->Pi_N, temp_1->Pi_Q);
+
+	 	//temp_1.Pi_Q
+		
+		
+	} 
+	
+	 
+		
+		
+		
 	return 0;
 }
 
@@ -597,20 +798,21 @@ float UCT_Seach()
 		
 		printf("--------------------------------------------nn = %d\n", nn);
 		printf("--running_time = %.3f s--\n", running_time);
+		
  		/*1. Find the best node to expand*/
 		
  		
 		//for (i=0;ready_queue[i]!=0;i++)
 // 			printf("ready_queue[%d] = %d\n", i, ready_queue[i]);
  		
- 		TreePolicy();
+ 		TreePolicy(nn);
  		
  		/*2. Random run to add node and get reward*/
- 		makespan = DefaultPolicy();
+ 		makespan = DefaultPolicy(nn);
  		printf("makespan=%d\n", makespan);
  		
- 		
- 		
+ 		/*3.Update all passing nodes with reward */
+ 		BackUp();
  		
  		
 		t_end = clock();
@@ -618,7 +820,9 @@ float UCT_Seach()
 		printf("--running_time = %.3f s--\n", running_time);
 		nn++; 
 	}
-	return 0;
+	Node_0 *entry;
+	entry = path[0];
+	return entry->Ti_Q/entry->Ti_N;
 }
 
 
@@ -767,9 +971,10 @@ int main()
     }
     
    
-   
-  	UCT_Seach();
-  	
+   	//蒙特卡罗树搜索 
+   	double best_makespan;
+  	best_makespan=UCT_Seach();
+  	printf("best_makespa%.2lf\n", best_makespan);
  	//getchar();
 
 	return 0;
