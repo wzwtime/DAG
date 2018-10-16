@@ -16,7 +16,7 @@
 #define MAXLENGTH 10
 #define V 10	//Task number
 #define P 3		//The number of processors 
-#define MAXTIME 0.8	//s
+#define MAXTIME 0.008	//s
 #define CP 10
 #define DBL_MIN -100000
 
@@ -67,6 +67,14 @@ struct Odd_Node	//奇数层 处理器 Pi
 typedef struct Evon_Node Node_0;
 
 typedef struct Odd_Node Node_1;
+
+/*返回数组中数据个数*/ 
+int len(int array[])
+{
+	int length;
+	for(length=0;array[length];length++);
+	return length;
+}
 
 
 int TreePolicy(int nn)
@@ -526,169 +534,138 @@ int DefaultPolicy(int nn)
 
  	}
  	
- 	//其余任务：随机任务、随机处理器 
+ 	/*其余任务：随机任务、随机处理器 */
  	printf("-----随机任务、随机处理器------\n");
  	int m, temp_succ[V]={}, succ_index=0;		//temp_succ[]记录ti的（后继的前驱不唯一）后继 
  	
  	for(m=0;m<V-job_remin_num;m++)
  	{
 	 	printf("----------------------------------m=%d, nn=%d\n", m, nn); 
-	 	
-	 	//计算就绪队列中的任务数 
 	 	int task_num;
-	 	
  	L1: 
-	 	for(task_num=0;ready_queue[task_num];task_num++);
-	 	//随机选择任务
+ 		/*计算就绪队列中的任务数*/
+ 		task_num = len(ready_queue);
+ 		printf("task_num=%d\n", task_num);
+ 		
+	 	//for(task_num=0;ready_queue[task_num];task_num++);
+	 	
+	 	/*随机选择任务*/
+ 		//测试输出就绪队列 
+		for(j=0;ready_queue[j];j++)
+			printf("ready_queue=%d\n", ready_queue[j]);
+			
 	 	ti=ready_queue[rand()%task_num];
 	 	
+	 	//加入临时调度列表 
+		temp_schedule[index++]=ti;
+		
+		//随机处理器 
+	 	pi= rand()%P + 1;
 	 	
-	 	//判断ti的前驱是否均完成调度
-	 	/*1.找到ti的前驱个数count*/
-	 	count=0;
-	 	int pred[V]={};
-		j=0; 
-	 	for(i=0;i<ti;i++)
+	 	printf("---------------------\n");
+	 	printf("Ti= %d,Pi= %d\n", ti, pi);
+	 	est = find_EST(ti-1, pi-1);
+	 	eft = comp_costs[ti-1][pi-1]+est;
+	 	
+		
+	 	schedule[ti-1].PI = pi-1;
+		schedule[ti-1].EST = est;
+		schedule[ti-1].EFT = eft;
+		
+ 		printf("Ti=%d\t", ti);
+		printf("PI=%d\t", schedule[ti-1].PI); 
+		printf("EST=%d\t", schedule[ti-1].EST);
+		printf("EFT=%d\n", schedule[ti-1].EFT);
+		
+	 	//在ready_queue中删除ti
+		for(j=0;ready_queue[j];j++)
+			if(ti==ready_queue[j])
+				for(k=j;k<task_num;k++)
+					ready_queue[k]=ready_queue[k+1];
+		//任务数减一 
+		task_num-=1;		//后边添加任务时要用：索引 
+		
+	 	//检查后继的前驱 
+ 		for(i=0;i<edges_number;i++)
 	 	{
- 			if(data[i][ti-1]>0)
-		 	{
-				printf("%d的前驱为：%d\n",ti, i+1);
-				pred[j++]=i+1;
-				count++;
- 			}
- 			
- 		}
- 		/*计算完成的调度的任务数*/
- 		int temp_count=0;
- 		for(k=0;pred[k];k++)
- 		{
-		 	for(j=0;temp_schedule[j];j++)
-	 		{
-	 			if(pred[k]==temp_schedule[j])
-	 			{
-			 		temp_count++;
-			 	}
-	 		}	
-	 	}
-	 	//打印调度列表 
-	 	for(k=0;temp_schedule[k];k++)
- 		{
- 			printf("temp_schedule[k]=%d\n", temp_schedule[k]);
-	 	}
- 		printf("temp_count=%d, count=%d\n", temp_count, count); 
- 		
-	 	//前驱均完成调度 
-	 	if(count==temp_count)
-	 	{
-	 		pi= rand()%P + 1;
-	 		//printf("ti= %d,pi= %d\n", ti, pi);
-
-	 		//在ready_queue中删除ti
-			for(j=0;ready_queue[j];j++)
-				if(ti==ready_queue[j])
-					for(k=j;k<task_num;k++)
-						ready_queue[k]=ready_queue[k+1];
-						
-			//测试输出就绪队列 
-			for(j=0;ready_queue[j];j++)
-				printf("ready_queue=%d\n", ready_queue[j]);
-				
-			//任务数减一 
-			task_num-=1;
-			
-			
-			/*需要优化:
-			1. 若ti只有一个前驱可直接加入就绪队列；
-			2. 若ti有多个前驱将ti后继加入一个临时列表中, 待前驱均完成调度时再加入就绪队列。*/
-				
-			//插入ti的后继
-			
-			for(i=0;i<edges_number;i++)
+	 		int succ;
+	 		if(comm_costs[i][0]==ti)
 			{
-				if(comm_costs[i][0]==ti)
+				succ = comm_costs[i][1];	 	
+				/*进行后继的前驱个数判断*/ 
+				int pred_num=0;
+				for(j=0;j<edges_number;j++)
 				{
-					
-					//int succ; 
-//					succ = comm_costs[i][1];
-//					//判断后继的前驱个数
-//					printf("后继=%d\n", succ);
-//					count = 0;
-//					for(i=0;i<succ;i++)
-//				 	{
-//			 			if(data[i][succ-1]>0)
-//					 	{
-//							printf("%d的前驱为：%d\n",succ, i+1);
-//							count++;
-//			 			}
-//			 			
-//			 		}
-//			 		printf("count=%d\n", count);
-//			 		//若后继只有一个前驱 ，则直接加入就绪队列 
-//					if(count==1)
-//					{
-//						ready_queue[task_num++]=comm_costs[i][1];
-//					}
-//					else	//后继有多个前驱 
-//					{
-//						printf("多个前驱\n");
-//						
-//						
-//					}  
-			 		
-					 
-					 
-				 
-						
-					//检测ti的后继是否已经在就绪队列中
-					k=0;
-					for(j=0;ready_queue[j];j++)
+					if(comm_costs[j][1]==succ)
 					{
-						if(comm_costs[i][1]==ready_queue[j])
-							k++; 
+						pred_num++;
 					}
-					if(k==0) //不在就绪对列中 
-					{	
-						
-						ready_queue[task_num++]=comm_costs[i][1];
-						printf("-----------Yes!count=%d\n",count);
-					}	
 				}
-				
+				printf("pred_num=%d\n", pred_num);
+				/*若ti后继的前驱只有一个则直接加入就绪队列 */
+				if(pred_num==1)
+				{
+					ready_queue[task_num++] = succ;		//!!!!!!!!!用到task_num 
+				}
+				else
+				{
+					//判断后继是否已经加入临时后继列表 
+					int label=1;		//标记是否出现过 ,未出现过 
+					for(k=0;temp_succ[k];k++)
+					{
+						if(succ==temp_succ[k])
+						{
+							label = 0; 
+						}
+					}
+					if(label)
+					{
+						temp_succ[succ_index++] = succ;
+					}					
+				} 		
 			}
-			
-					
-		 //	//测试输出就绪队列 
-//			for(j=0;ready_queue[j];j++)
-//				printf("ready_queue=%d\n", ready_queue[j]);
-				
-		 	printf("---------------------\n");
-		 	printf("Ti= %d,Pi= %d\n", ti, pi);
-		 	est = find_EST(ti-1, pi-1);
-		 	eft = comp_costs[ti-1][pi-1]+est;
-		 	//加入临时调度列表 
-			temp_schedule[index++]=ti;
-			
-		 	schedule[ti-1].PI = pi-1;
-			schedule[ti-1].EST = est;
-			schedule[ti-1].EFT = eft;
-	 		printf("Ti=%d\t", ti);
-			printf("PI=%d\t", schedule[ti-1].PI); 
-			printf("EST=%d\t", schedule[ti-1].EST);
-			printf("EFT=%d\n", schedule[ti-1].EFT);
-			makespan = eft;
-			
-			//printf("m=%d\n",m);
-	 	}
-	 	else
+ 		} 
+	 	//判断临时后继任务是否可以加入就绪队列
+		for(i=0;temp_succ[i];i++)
 		{
-			printf("跳转.....\n");
-			//测试输出就绪队列 
-			for(j=0;ready_queue[j];j++)
-				printf("ready_queue=%d\n", ready_queue[j]);
-				
-			goto L1;
-		} 
+			printf("temp_succ=%d\n", temp_succ[i]);
+			ti = temp_succ[i];
+			//计算ti的前驱个数 
+			int ti_pred_num=0,ti_pred_sched_num=0, pred[V]={}, pred_index=0;
+			for(j=0;j<edges_number;j++)
+		 	{
+	 			if(comm_costs[j][1]==ti)
+			 	{
+			 		ti_pred_num++;
+					pred[pred_index++]=	comm_costs[j][0];
+ 				} 
+	 		}
+	 		//计算ti前驱调度完成的数量
+	 		for(j=0;pred[j];j++)
+	 		{
+			 	for(k=0;temp_schedule[k];k++)
+		 		{
+		 			if(pred[j]==temp_schedule[k])
+		 			{
+				 		ti_pred_sched_num++;
+				 	}
+		 		}	
+		 	}
+	 		printf("ti_pred_num=%d, ti_pred_sched_num=%d\n", ti_pred_num, ti_pred_sched_num);
+	 		//判断
+			if(ti_pred_num==ti_pred_sched_num)
+			{
+				ready_queue[task_num++]=ti;
+				//从临时后继列表中删除ti
+			 	for(j=0;temp_succ[j];j++)
+					if(ti==temp_succ[j])
+						for(k=j;k<succ_index;k++)
+							temp_succ[k]=temp_succ[k+1];
+				succ_index--;	//索引减一 ！！！！！ 
+			} 	
+		} 	
 	}
+	makespan = eft;
 	return -makespan;
 }
 
@@ -971,11 +948,10 @@ int main()
     }
     
    
-   	//蒙特卡罗树搜索 
+   	/*蒙特卡罗树搜索 */
    	double best_makespan;
-  	best_makespan=UCT_Seach();
-  	printf("best_makespa%.2lf\n", best_makespan);
- 	//getchar();
-
+  	best_makespan = UCT_Seach();
+  	printf("best_makespan=%.2lf\n", best_makespan);
+  	
 	return 0;
 }
