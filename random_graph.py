@@ -148,7 +148,7 @@ class RandomGraphGenerator:
         return temp_child_num
 
     def add_edges(self, p_id_list, p_num, out_degree, c_id_list, c_num, avg_comm_costs):
-        # print(p_id_list, c_id_list)
+        # print("p_id_list=", p_id_list, "c_id_list=", c_id_list)
         random.shuffle(p_id_list)  # Disrupt the p_id_list
         # print("p_id_list =", p_id_list)
         temp_pid = p_id_list[0]
@@ -185,12 +185,15 @@ class RandomGraphGenerator:
 
     def less_to_multi(self, task_num_layer, out_degree, dag_id, avg_comm_costs):
         """Less-to-multi make child nodes are randomly divided into total number of parent nodes"""
-        p_id_list = []
-        c_id_list = []
+        # p_id_list = []
+        # c_id_list = []
         for i in range(1, len(task_num_layer) - 2):
             p_num = task_num_layer[i]
             c_num = task_num_layer[i + 1]
             if p_num != 1 and c_num != 1 and p_num <= c_num:
+                """clear empty!18.10.31 !!!!!!!!!!!!!!!!!!!"""
+                p_id_list = []
+                c_id_list = []
                 p_index = i
                 """Grouping children's nodes"""
                 temp_child_num = self.grouping_children_nodes(p_num, c_num, out_degree)
@@ -237,14 +240,17 @@ class RandomGraphGenerator:
 
     def multi_to_less(self, task_num_layer, dag_id, avg_comm_costs, out_degree):
         """Multi-to-Less make parent nodes are randomly divided into total number of child nodes"""
-        p_id_list = []
-        c_id_list = []
+        # p_id_list = []
+        # c_id_list = []
 
         for i in range(2, len(task_num_layer) - 1):     # !!!!!!!!!!!!!  is -1 not -2  Traverse completely
             p_num = task_num_layer[i - 1]
             c_num = task_num_layer[i]
 
             if p_num != 1 and c_num != 1 and p_num > c_num:
+                """clear empty!18.10.31 !!!!!!!!!!!!!!!!!!!"""
+                p_id_list = []
+                c_id_list = []
                 c_index = i
                 """The parent node is randomly divided into the total number of child nodes."""
                 temp_parent_num = self.grouping_parent_nodes(p_num, c_num)
@@ -359,7 +365,8 @@ class RandomGraphGenerator:
         file_dir_ = os.path.split(filename)[0]
         if not os.path.isdir(file_dir_):
             os.makedirs(file_dir_)
-        with open(filename, 'w') as file_object_:
+        # with open(filename, 'w') as file_object_:
+        with open(filename, 'a') as file_object_:
             info_ = str(self.v) + "  " + str(ccr) + "  " + str(alpha) + "  " + str(beta) + "  " + str(self.q) + "\n"
             file_object_.write(info_)
 
@@ -377,41 +384,41 @@ class RandomGraphGenerator:
 
 
 if __name__ == "__main__":
-    v = 20
-    q = 3
-    N = 5
+    v = 100
+    # q = 3
+    N = 1
     n_min = 5
     n_max = 20
+    for q in range(3, 8):
+        rgg = RandomGraphGenerator(v, q, N, n_min, n_max)
 
-    rgg = RandomGraphGenerator(v, q, N, n_min, n_max)
+        def store_dag(n_):
+            file_path = 'save_dag/' + str(rgg.mon) + "_" + str(rgg.day) + '/v=' + str(v) + 'q=' + str(q) + '/'
+            filename_ = file_path + "_" + str(n_) + '_dag_q=' + str(q) + '.txt'
+            file_dir = os.path.split(filename_)[0]
+            if not os.path.isdir(file_dir):
+                os.makedirs(file_dir)
+            if os.path.exists(filename_):
+                os.remove(filename_)
 
-    def store_dag(n_):
-        file_path = 'save_dag/' + str(rgg.mon) + "_" + str(rgg.day) + '/v=' + str(v) + 'q=' + str(q) + '/'
-        filename_ = file_path + "_" + str(n_) + '_dag_q=' + str(q) + '.txt'
-        file_dir = os.path.split(filename_)[0]
-        if not os.path.isdir(file_dir):
-            os.makedirs(file_dir)
-        if os.path.exists(filename_):
-            os.remove(filename_)
+            for m in range(len(dag_new)):
+                task_id = dag_new[m][0]
+                # for key, value in dag1[m][1].items():
+                for key, value in sorted(dag_new[m][1].items()):  # Ascending sort children task number
+                    succ_id = key
+                    succ_weight = value
+                    with open(filename_, 'a') as file_object:
+                        info = str(task_id) + "  " + str(succ_id) + "  " + str(succ_weight) + "\n"
+                        file_object.write(info)
 
-        for m in range(len(dag_new)):
-            task_id = dag_new[m][0]
-            # for key, value in dag1[m][1].items():
-            for key, value in sorted(dag_new[m][1].items()):  # Ascending sort children task number
-                succ_id = key
-                succ_weight = value
-                with open(filename_, 'a') as file_object:
-                    info = str(task_id) + "  " + str(succ_id) + "  " + str(succ_weight) + "\n"
-                    file_object.write(info)
+        n = 1
+        while n <= N:
+            """"execute"""
+            rgg.select_parameter(n)
 
-    n = 1
-    while n <= N:
-        """"execute"""
-        rgg.select_parameter(n)
+            """Ascending sort by task number"""
+            dag_new = sorted(rgg.dag.items(), key=operator.itemgetter(0))
 
-        """Ascending sort by task number"""
-        dag_new = sorted(rgg.dag.items(), key=operator.itemgetter(0))
-
-        """Store DAG in files"""
-        store_dag(n)
-        n += 1
+            """Store DAG in files"""
+            store_dag(n)
+            n += 1
