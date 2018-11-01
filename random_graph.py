@@ -18,7 +18,8 @@ class RandomGraphGenerator:
         self.SET_out_degree = [2, 3, 4, 5, ]
         self.SET_beta = [0.1, 0.25, 0.5, 0.75, 1.0]
         """add new info"""
-        self.SET_density = [0.2, 0.5, 0.8]
+        # self.SET_density = [0.2, 0.5, 0.8]  # 稀疏程度
+        self.SET_density = [0.2, 0.5, 0.8, 1.0]  # 稀疏程度
         self.SET_jump = [1, 2, 4, ]
 
         self.computation_costs = []
@@ -44,7 +45,8 @@ class RandomGraphGenerator:
         self.random_avg_w_dag(self.n_min, self.n_max)
 
         file_path_ = 'save_dag/' + str(self.mon) + "_" + str(self.day) + '/v=' + str(self.v) + 'q=' + str(self.q) + '/'
-        filename = file_path_ + '_' + str(n_) + '_computation_costs_q=' + str(self.q) + '.txt'
+        # filename = file_path_ + '_' + str(n_) + '_computation_costs_q=' + str(self.q) + '.txt'
+        filename = file_path_ + '_' + str(n_) + '_comp_costs' + '.txt'
         file_dir_ = os.path.split(filename)[0]
         if not os.path.isdir(file_dir_):
             os.makedirs(file_dir_)
@@ -151,17 +153,21 @@ class RandomGraphGenerator:
         # print("p_id_list=", p_id_list, "c_id_list=", c_id_list)
         random.shuffle(p_id_list)  # Disrupt the p_id_list
         # print("p_id_list =", p_id_list)
-        temp_pid = p_id_list[0]
+        temp_pid = p_id_list[0]     # 选择打乱后的第一个pid增加边信息
         # print("temp_pid =", temp_pid)
+
         """Calculation out_degree of temp_pid"""
         # print("self.dag[temp_pid] =", self.dag[temp_pid])
         o_degree = len(self.dag[temp_pid])
+
         # print("o_degree =", o_degree)
-        edge_num = math.ceil(p_num * self.SET_density[random.randrange(0, 2)])
+        edge_num = math.ceil(p_num * self.SET_density[random.randrange(0, 2)])      # 根据稀疏程度计算该节点的出度
         # print("edge_num =", edge_num)
+
         if edge_num > out_degree:
             edge_num = out_degree
-        if edge_num > o_degree:
+
+        if edge_num > o_degree:     # 判断是否可以为temp_pid增加边
             # print("yes")
             random.shuffle(c_id_list)  # Disrupt the c_id_list
             # print("c_id_list =", c_id_list)
@@ -172,7 +178,7 @@ class RandomGraphGenerator:
                 temp_dag[key_] = value_
             for t in range(c_num):
                 c_id = c_id_list[t]
-                if c_id not in self.dag[temp_pid].keys():
+                if c_id not in self.dag[temp_pid].keys():   # 添加未添加过的边
                     edge_num_count += 1
                     # print("c_id =", c_id)
                     communication_costs = random.randint(1, 2 * avg_comm_costs - 1)
@@ -277,7 +283,7 @@ class RandomGraphGenerator:
                         # print(p_id, "--->", c_id)
                         self.dag[p_id] = temp_dag
                 """add edges"""
-                self.add_edges(p_id_list, p_num, out_degree, c_id_list, c_num, avg_comm_costs)
+                # self.add_edges(p_id_list, p_num, out_degree, c_id_list, c_num, avg_comm_costs)
 
     def random_graph_generator(self, n_, ccr, alpha, out_degree, beta):
         """requires five parameters to build weighted DAGs
@@ -394,7 +400,8 @@ if __name__ == "__main__":
 
         def store_dag(n_):
             file_path = 'save_dag/' + str(rgg.mon) + "_" + str(rgg.day) + '/v=' + str(v) + 'q=' + str(q) + '/'
-            filename_ = file_path + "_" + str(n_) + '_dag_q=' + str(q) + '.txt'
+            # filename_ = file_path + "_" + str(n_) + '_dag_q=' + str(q) + '.txt'
+            filename_ = file_path + "_" + str(n_) + '_comm_costs' + '.txt'
             file_dir = os.path.split(filename_)[0]
             if not os.path.isdir(file_dir):
                 os.makedirs(file_dir)
